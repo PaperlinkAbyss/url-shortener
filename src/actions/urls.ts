@@ -1,7 +1,7 @@
 'use server'
 
 import { createShortenedURL } from '@/db/queries'
-import { InsertURL } from '@/db/schema'
+import { URLSchema } from '@/db/schema'
 import { z } from 'zod'
 type Thing = {
 	isSent: boolean
@@ -11,10 +11,9 @@ type Thing = {
 }
 
 type URLData = {
-	type: InsertURL['type']
+	type: URLSchema['type']
 	url: string
 	customURL: string
-	// custom
 }
 const URLDataValidator = z.object({
 	url: z.string().url(),
@@ -22,13 +21,12 @@ const URLDataValidator = z.object({
 	customURL: z.string(),
 })
 export async function sendURL(prevState: Thing, data: FormData) {
-	const info = Object.fromEntries(data.entries()) as URLData
-	console.log('Data', info)
+	const info = Object.fromEntries(data.entries())
 	console.log('url validator', URLDataValidator)
 	const _parsed = URLDataValidator.safeParse(info)
 	// console.log('Parsed', { parsed })
 	if (!_parsed.success) {
-		return { isSent: true, hasError: true, reason: JSON.stringify(parsed.error.message), shortURL: '' }
+		return { isSent: true, hasError: true, reason: JSON.stringify(_parsed.error.message), shortURL: '' }
 	}
 	const parsed = _parsed.data
 	if (parsed.type === 'custom') {
