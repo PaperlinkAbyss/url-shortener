@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
 		// Replace this with your own DB client.
 		const existingUser = await db.query.github.findFirst({ where: eq(githubUser.id, github.githubId) })
-		console.log('What is this all', { token, githubUserResponse, existingUser })
+		console.log('What is this all', { tokens, githubUserResponse, existingUser })
 		// await db.table('user').where('github_id', '=', githubUser.id).get()
 		return
 		if (existingUser) {
