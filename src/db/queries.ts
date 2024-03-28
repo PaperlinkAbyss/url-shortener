@@ -1,9 +1,9 @@
 'use server'
 import getId from '@/utils/getID'
-import { eq } from 'drizzle-orm'
+import { and, eq, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from './db'
-import { urls } from './schema'
+import { urls, users } from './schema'
 type Props = {
 	type: 'default' | 'custom'
 	unshortened: string
@@ -56,4 +56,58 @@ async function getLongURLInfo(unshortened: string) {
 }
 export async function deleteNote(id: number) {
 	await db.delete(urls).where(eq(urls.id, id))
+}
+export async function isUserOnDB({ usernameOrEmail }: { usernameOrEmail: string }) {
+	// return db.query.users.findFirst({where: andeq(users.username,username)}) // todo check con carlo
+	// probablemente?:
+	return db.query.users.findFirst({
+		where: or(eq(users.username, usernameOrEmail), eq(users.email, usernameOrEmail)),
+	})
+}
+
+export async function isUsernameOrEmailOnDB({ username, email }: { username: string; email: string }) {
+	return db.query.users.findFirst({ where: or(eq(users.username, username), eq(users.email, email)) })
+}
+
+export async function registerUser({
+	username,
+	email,
+	password,
+	displayName,
+}: {
+	username: string
+	password: string
+	email: string
+	displayName?: string
+}) {
+	const isUsernameOrEmailAlreadyOnDB = isUsernameOrEmailOnDB({ username, email })
+	if (!isUsernameOrEmailAlreadyOnDB) {
+		return { error: true, reason: 'already here bitch' }
+	}
+	const qrId = getId(25)
+	const info = await db
+		.insert(users)
+		.values({ username, email, hashedPassword: password, qrId, displayName: displayName ?? '' })
+		.returning({ userId: users.id, qrId: users.qrId })
+		.onConflictDoNothing()
+	if (!info) {
+		return { error: true, reason: 'failed to insert on db' }
+	}
+	return { error: false, info: info[0] }
+}
+
+export async function updateUserDisplayName({
+	username,
+	password,
+	newName,
+}: {
+	username: string
+	password: string
+	newName: string
+}) {
+	return db
+		.update(users)
+		.set({ displayName: newName })
+		.where(and(eq(users.username, username), eq(users.hashedPassword, password)))
+		.returning({ displayName: users.displayName })
 }

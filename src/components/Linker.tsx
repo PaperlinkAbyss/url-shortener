@@ -1,16 +1,19 @@
 'use client'
 import { sendURL } from '@/actions/urls'
 import clsx from 'clsx'
-import { MouseEvent, useState } from 'react'
+import { MouseEvent, useReducer, useState } from 'react'
 import { useFormState } from 'react-dom'
 export default function Linker() {
 	const [selected, setSelected] = useState<'default' | 'custom'>('default')
+	const [isOpen, toggle] = useReducer((a) => !a, false)
 	function copyToClipboard(event: MouseEvent<HTMLInputElement>) {
 		if (event.detail >= 2) {
 			navigator.clipboard.writeText(location.href + state.shortURL)
 		}
 	}
 	const [state, formAction] = useFormState(sendURL, { shortURL: '', hasError: false, isSent: false, reason: '' })
+
+	function openNonLoggedModal() {}
 	return (
 		<form className='grid place-content-center justify-center h-screen' action={formAction}>
 			<h2 className='text-8xl font-bold mb-10'>
@@ -72,7 +75,10 @@ export default function Linker() {
 					)}
 				/>
 			</div>
-			<button type='submit' className='bg-black text-white font-medium mt-1 p-1 rounded-lg '>
+			<button
+				type='submit'
+				onClick={openNonLoggedModal}
+				className='bg-black text-white font-medium mt-1 p-1 rounded-lg '>
 				Shorten URL
 			</button>
 			<input

@@ -1,6 +1,7 @@
 import { getShortURLInfo } from '@/db/queries'
 import { redirect } from 'next/navigation'
 import { NextRequest } from 'next/server'
+import 'server-only'
 type Props = {
 	params: { id: string }
 }
