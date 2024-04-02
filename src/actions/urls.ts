@@ -33,6 +33,7 @@ export async function sendURL(prevState: Thing, data: FormData) {
 		const shortenedInfo = await createShortenedURL({
 			type: parsed.type,
 			unshortened: parsed?.url,
+			qrId: '',
 			text: parsed.customURL
 				.replace('.', '-') // replace a dot by a dash
 				.replace(/[^a-z0-9 -]/g, '') // remove invalid chars
@@ -45,7 +46,7 @@ export async function sendURL(prevState: Thing, data: FormData) {
 		}
 		return { isSent: true, hasError: false, reason: '', shortURL: shortenedInfo.shortened }
 	}
-	const shortenedInfo = await createShortenedURL({ type: parsed.type, unshortened: parsed.url })
+	const shortenedInfo = await createShortenedURL({ type: parsed.type, unshortened: parsed.url, qrId: '' })
 	if (!shortenedInfo.success) {
 		return { isSent: true, hasError: true, reason: shortenedInfo.reason, shortURL: '' }
 	}
