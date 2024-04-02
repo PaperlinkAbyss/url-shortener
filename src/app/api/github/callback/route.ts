@@ -1,5 +1,6 @@
 import { db } from '@/db/db'
-import { github, users } from '@/db/schema'
+import { users } from '@/db/schema'
+import getURL from '@/utils/getURL'
 import { OAuth2RequestError } from 'arctic'
 import { eq } from 'drizzle-orm'
 import { generateId } from 'lucia'
@@ -35,21 +36,22 @@ export async function GET(request: Request) {
 
 		const validResponse = GithubValidator.safeParse(githubUser)
 		if (!validResponse.success) return new Response(null, { status: 401 })
-		const existingUser = await db.query.github.findFirst({ where: eq(githubUser.id, github.githubId) })
+		const existingUser = await db.query.users.findFirst({ where: eq(users.email, validResponse.data.email) })
 		if (existingUser) {
-			const session = await lucia.createSession(existingUser?.userId, {})
+			const session = await lucia.createSession(existingUser.id, {})
 			const sessionCookie = lucia.createSessionCookie(session.id)
 			cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
 			return new Response(null, {
 				status: 302,
 				headers: {
-					Location: '/',
+					Location: getURL('/'),
 				},
 			})
 		}
 
 		const qrId = generateId(15)
 		const userID = await db.transaction(async () => {
+			//TODO: THis should be done later...
 			const userId = await db
 				.insert(users)
 				.values({
@@ -58,11 +60,6 @@ export async function GET(request: Request) {
 					qrId,
 				})
 				.returning({ userId: users.id })
-
-			await db
-				.insert(github)
-				.values({ githubId: validResponse.data.id, githubUsername: validResponse.data.login, userId: userId[0].userId })
-				.onConflictDoUpdate({ target: github.userId, set: { userId: userId[0].userId } })
 			return userId[0].userId
 		})
 
@@ -72,6 +69,7 @@ export async function GET(request: Request) {
 		return new Response(null, {
 			status: 302,
 			headers: {
+				// Todo: fix this
 				Location: '/',
 			},
 		})

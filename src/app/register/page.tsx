@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useFormState } from 'react-dom'
-import { page } from '../api/github/action'
 const inputStyles = 'pl-2 border border-gray-600/20 rounded-lg py-1'
 const labelStyles = 'font-semibold pb-1 text-md pt-2 mt-2'
 const baseButton = 'px-1 py-2 rounded-md my-2 border border-gray-600/10  transition-colors ease-in '
@@ -65,9 +64,9 @@ export default function Page() {
 					{isLoaded && !isLoaded.error ? 'Properly registered, thank you!' : isLoaded.reason}
 				</form>
 				<div className='border-t-2 border-gray-600/20 grid p-4 '>
-					<form action={page}>
-						<button className={clsx(baseButton, 'bg-white')}>Sign up with Github</button>
-					</form>
+					<Link href='/api/github' className={clsx(baseButton, 'bg-white')}>
+						Sign up with Github
+					</Link>
 					<Link href='/api/google' className={clsx(baseButton, 'bg-white')}>
 						Sign up with Google
 					</Link>

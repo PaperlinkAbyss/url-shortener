@@ -8,6 +8,7 @@ type Props = {
 	type: 'default' | 'custom'
 	unshortened: string
 	text?: string
+	qrId: string
 }
 const ShortenedURLValidator = z.object({
 	type: z.enum(['default', 'custom']),
@@ -19,6 +20,7 @@ export async function createShortenedURL({
 	type,
 	unshortened,
 	text,
+	qrId,
 }: Props): Promise<{ success: false; reason: string } | { success: true; shortened: string; unshortened: string }> {
 	// This needs to check user probably
 	const isOnDB = await getLongURLInfo(unshortened)
@@ -40,10 +42,10 @@ export async function createShortenedURL({
 			console.log('Provide a valid url', { type, text })
 			return { success: false, reason: 'Provide a valid url' }
 		}
-		await db.insert(urls).values({ unshortened, shortened, type })
+		await db.insert(urls).values({ unshortened, shortened, type, qrId })
 		return { shortened, unshortened, success: true }
 	}
-	await db.insert(urls).values({ unshortened, shortened, type })
+	await db.insert(urls).values({ unshortened, shortened, type, qrId })
 	return { shortened, unshortened, success: true }
 }
 
@@ -82,13 +84,14 @@ export async function registerUser({
 	if (!userInfo) {
 		return { error: true, reason: 'Already existing user! redirecting to login', redirect: '/login' }
 	}
-	if (!userInfo.hashedPassword) {
-		const providersInfo = await db.query.users.findFirst({
-			where: or(eq(users.username, username), eq(users.email, email)),
-			with: { github: true },
-		})
-		return { error: true }
-	}
+	// Todo check this logic
+	// if (!userInfo.hashedPassword) {
+	// 	const providersInfo = await db.query.users.findFirst({
+	// 		where: or(eq(users.username, username), eq(users.email, email)),
+	// 		with: { github: true },
+	// 	})
+	// 	return { error: true }
+	// }
 	const qrId = getId(25)
 	const info = await db
 		.insert(users)
