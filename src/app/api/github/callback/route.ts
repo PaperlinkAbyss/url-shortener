@@ -50,20 +50,16 @@ export async function GET(request: Request) {
 		}
 
 		const qrId = generateId(15)
-		const userID = await db.transaction(async () => {
-			//TODO: THis should be done later...
-			const userId = await db
-				.insert(users)
-				.values({
-					email: validResponse.data.email,
-					username: validResponse.data.login,
-					qrId,
-				})
-				.returning({ userId: users.id })
-			return userId[0].userId
-		})
+		const userID = await db
+			.insert(users)
+			.values({
+				email: validResponse.data.email,
+				username: validResponse.data.login,
+				qrId,
+			})
+			.returning({ userId: users.id })
 
-		const session = await lucia.createSession(userID, {})
+		const session = await lucia.createSession(userID?.[0]?.userId, {})
 		const sessionCookie = lucia.createSessionCookie(session.id)
 		cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
 		return new Response(null, {
