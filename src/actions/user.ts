@@ -21,13 +21,13 @@ export async function login(prevState: Return, formData: FormData) {
 		return { isLoaded: true, error: true, reason: info.error.message, success: false }
 	}
 	const hashpw = await new Argon2id().hash(info.data.password)
-	const isValidLogin = await isUserOnDB({
+	const userFound = await isUserOnDB({
 		usernameOrEmail: info.data.usernameOrEmail,
 	})
-	if (isValidLogin) {
-		const isValidPw = await new Argon2id().verify(isValidLogin.hashedPassword, info.data.password)
-		if (isValidLogin) {
-			const session = await lucia.createSession(isValidLogin.id, {})
+	if (userFound) {
+		const isValidPw = await new Argon2id().verify(userFound.hashedPassword, info.data.password)
+		if (isValidPw) {
+			const session = await lucia.createSession(userFound.id, {})
 			const sessionCookie = await lucia.createSessionCookie(session.id)
 			cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
 			return { error: false, isLoaded: true, success: true } //This should be a login so gud, redirect to wherever
@@ -35,7 +35,7 @@ export async function login(prevState: Return, formData: FormData) {
 		return { error: true, isLoaded: true, success: false, reason: 'You wrote something wrong, please try again!' }
 	}
 	//User is NOT on DB, so it should just tell you you are bad
-	console.log('Not found', { isValidLogin, pw: info.data.password, hashedPw: hashpw })
+	console.log('Not found', { userFound, pw: info.data.password, hashedPw: hashpw })
 	return { error: true, isLoaded: true, success: false, reason: 'Something is wrong, try it again?' }
 }
 type Return = { error: boolean; isLoaded: boolean; success?: boolean; reason?: string }
@@ -59,20 +59,18 @@ export async function register(prevState: Return, formData: FormData) {
 			email: data.email,
 		})
 		if (result.error) {
-			return { error: false, reason: result.reason, isLoaded: true }
+			return { error: false, reason: result.reason, isLoaded: true, redirect: result.redirect }
 		}
 		// Handle all the session things:
 		const userId = result.info?.userId
-		if (!userId) return { error: true, isLoaded: true, reason: 'no userId found' }
+		if (!userId) return { error: true, isLoaded: true, reason: 'no user found' }
 		const session = await lucia.createSession(userId, { qrId: result.info?.userId })
 		const sessionCookie = lucia.createSessionCookie(session.id)
 		cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
 		return { error: false, isLoaded: true }
 	}
 }
-type Logout = {
-	sessionId: string
-}
+
 const LogoutValidator = z.object({
 	logout: z.string().min(1),
 })
@@ -80,7 +78,6 @@ export async function logout(formData: any) {
 	const zodParsedInfo = LogoutValidator.safeParse(Object.fromEntries(formData.entries()))
 	if (zodParsedInfo.success) {
 		const sessionCookie = lucia.createBlankSessionCookie()
-		// headers().set('Set-Cookie', sessionCookie.serialize())
 		cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
 		lucia.invalidateSession(zodParsedInfo.data.logout)
 	}

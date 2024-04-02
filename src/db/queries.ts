@@ -37,8 +37,8 @@ export async function createShortenedURL({
 	}
 	if (type === 'custom') {
 		if (!text || text === '/') {
-			console.log('Provide a valid url dumbdumb', { type, text })
-			return { success: false, reason: 'Provide a valid url dumbdumb' }
+			console.log('Provide a valid url', { type, text })
+			return { success: false, reason: 'Provide a valid url' }
 		}
 		await db.insert(urls).values({ unshortened, shortened, type })
 		return { shortened, unshortened, success: true }
@@ -58,8 +58,6 @@ export async function deleteNote(id: number) {
 	await db.delete(urls).where(eq(urls.id, id))
 }
 export async function isUserOnDB({ usernameOrEmail }: { usernameOrEmail: string }) {
-	// return db.query.users.findFirst({where: andeq(users.username,username)}) // todo check con carlo
-	// probablemente?:
 	return db.query.users.findFirst({
 		where: or(eq(users.username, usernameOrEmail), eq(users.email, usernameOrEmail)),
 	})
@@ -80,9 +78,16 @@ export async function registerUser({
 	email: string
 	displayName?: string
 }) {
-	const isUsernameOrEmailAlreadyOnDB = isUsernameOrEmailOnDB({ username, email })
-	if (!isUsernameOrEmailAlreadyOnDB) {
-		return { error: true, reason: 'already here bitch' }
+	const userInfo = await isUsernameOrEmailOnDB({ username, email })
+	if (!userInfo) {
+		return { error: true, reason: 'Already existing user! redirecting to login', redirect: '/login' }
+	}
+	if (!userInfo.hashedPassword) {
+		const providersInfo = await db.query.users.findFirst({
+			where: or(eq(users.username, username), eq(users.email, email)),
+			with: { github: true },
+		})
+		return { error: true }
 	}
 	const qrId = getId(25)
 	const info = await db
@@ -91,7 +96,7 @@ export async function registerUser({
 		.returning({ userId: users.id, qrId: users.qrId })
 		.onConflictDoNothing()
 	if (!info) {
-		return { error: true, reason: 'failed to insert on db' }
+		return { error: true, reason: 'Failed to insert on db' }
 	}
 	return { error: false, info: info[0] }
 }

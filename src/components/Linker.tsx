@@ -41,10 +41,10 @@ export default function Linker() {
 						<input
 							type='radio'
 							value='default'
+							onChange={() => 1}
 							name='type'
 							onClick={() => setSelected('default')}
 							checked={selected === 'default'}
-							onChange={() => {}}
 							className='border border-red bg-black self-center mr-1 ml-2 h-full'
 						/>
 						<label className='text-center justify-center justify-self-center' onClick={() => setSelected('default')}>
@@ -69,6 +69,7 @@ export default function Linker() {
 					defaultValue='/'
 					name='customURL'
 					required={selected === 'custom'}
+					onChange={() => {}}
 					className={clsx(
 						'border-black block rounded-md pl-1.5 w-full ml-2 mr-1 border align-center mx-auto justify-center',
 						selected === 'custom' ? 'visible' : 'invisible'
@@ -84,6 +85,7 @@ export default function Linker() {
 			<input
 				onClick={copyToClipboard}
 				value={state.shortURL ? `${location.href}${state.shortURL}` : ''}
+				onChange={() => {}}
 				className='text-center mt-4'
 			/>
 		</form>

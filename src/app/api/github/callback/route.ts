@@ -1,8 +1,18 @@
 import { db } from '@/db/db'
-import { github } from '@/db/schema'
+import { github, users } from '@/db/schema'
+import { OAuth2RequestError } from 'arctic'
 import { eq } from 'drizzle-orm'
+import { generateId } from 'lucia'
 import { cookies } from 'next/headers'
+import { z } from 'zod'
 import { arcticGithub } from '../../../../../adapters/arctic'
+import { lucia } from '../../../../../adapters/lucia'
+
+const GithubValidator = z.object({
+	login: z.string(),
+	email: z.string().email(),
+	id: z.number(),
+})
 
 export async function GET(request: Request) {
 	const url = new URL(request.url)
@@ -23,51 +33,58 @@ export async function GET(request: Request) {
 		})
 		const githubUser = await githubUserResponse.json()
 
-		// Replace this with your own DB client.
+		const validResponse = GithubValidator.safeParse(githubUser)
+		if (!validResponse.success) return new Response(null, { status: 401 })
 		const existingUser = await db.query.github.findFirst({ where: eq(githubUser.id, github.githubId) })
-		console.log('What is this all', { tokens, githubUserResponse, existingUser })
-		// await db.table('user').where('github_id', '=', githubUser.id).get()
-		return
-		// if (existingUser) {
-		// 	const session = await lucia.createSession(existingUser.id, {})
-		// 	const sessionCookie = lucia.createSessionCookie(session.id)
-		// 	cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
-		// 	return new Response(null, {
-		// 		status: 302,
-		// 		headers: {
-		// 			Location: '/',
-		// 		},
-		// 	})
-		// }
+		if (existingUser) {
+			const session = await lucia.createSession(existingUser?.userId, {})
+			const sessionCookie = lucia.createSessionCookie(session.id)
+			cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
+			return new Response(null, {
+				status: 302,
+				headers: {
+					Location: '/',
+				},
+			})
+		}
 
-		// const userId = generateId(15)
+		const qrId = generateId(15)
+		const userID = await db.transaction(async () => {
+			const userId = await db
+				.insert(users)
+				.values({
+					email: validResponse.data.email,
+					username: validResponse.data.login,
+					qrId,
+				})
+				.returning({ userId: users.id })
 
-		// // Replace this with your own DB client.
-		// await db.table('user').insert({
-		// 	id: userId,
-		// 	github_id: githubUser.id,
-		// 	username: githubUser.login,
-		// })
+			await db
+				.insert(github)
+				.values({ githubId: validResponse.data.id, githubUsername: validResponse.data.login, userId: userId[0].userId })
+				.onConflictDoUpdate({ target: github.userId, set: { userId: userId[0].userId } })
+			return userId[0].userId
+		})
 
-		// const session = await lucia.createSession(userId, {})
-		// const sessionCookie = lucia.createSessionCookie(session.id)
-		// cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
-		// return new Response(null, {
-		// 	status: 302,
-		// 	headers: {
-		// 		Location: '/',
-		// 	},
-		// })
+		const session = await lucia.createSession(userID, {})
+		const sessionCookie = lucia.createSessionCookie(session.id)
+		cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
+		return new Response(null, {
+			status: 302,
+			headers: {
+				Location: '/',
+			},
+		})
 	} catch (e) {
-		// the specific error message depends on the provider
-		// if (e instanceof OAuth2RequestError) {
-		// 	// invalid code
-		// 	return new Response(null, {
-		// 		status: 400,
-		// 	})
-		// }
-		// return new Response(null, {
-		// 	status: 500,
-		// })
+		console.log('Error', { e })
+		if (e instanceof OAuth2RequestError) {
+			// invalid code
+			return new Response(null, {
+				status: 400,
+			})
+		}
+		return new Response(null, {
+			status: 500,
+		})
 	}
 }
