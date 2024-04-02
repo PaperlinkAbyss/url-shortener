@@ -22,7 +22,7 @@ export default function Page() {
 			}, 2_000)
 		}
 		return () => clearTimeout(timeout)
-	}, [isLoaded.isLoaded])
+	}, [isLoaded, isLoaded.isLoaded, router])
 
 	return (
 		<div className='grid place-content-center  w-screen h-screen'>

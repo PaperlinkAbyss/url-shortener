@@ -26,7 +26,7 @@ export default function Page() {
 			}, 2_000)
 		}
 		return () => clearTimeout(timeout)
-	}, [isLoaded.isLoaded, isLoaded.redirect])
+	}, [isLoaded, isLoaded.isLoaded, isLoaded.redirect, router])
 	return (
 		<div className='grid place-content-center  w-screen h-screen'>
 			<div className='border border-gray-600/20 rounded-md flex flex-col w-[30vw] '>

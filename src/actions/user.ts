@@ -24,7 +24,7 @@ export async function login(prevState: Return, formData: FormData) {
 	const userFound = await isUserOnDB({
 		usernameOrEmail: info.data.usernameOrEmail,
 	})
-	if (userFound) {
+	if (userFound && userFound.hashedPassword) {
 		const isValidPw = await new Argon2id().verify(userFound.hashedPassword, info.data.password)
 		if (isValidPw) {
 			const session = await lucia.createSession(userFound.id, {})
