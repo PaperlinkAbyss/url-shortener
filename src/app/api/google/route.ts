@@ -1,7 +1,7 @@
+import { arctigGoogle } from '@/lib/auth'
 import { generateCodeVerifier } from 'arctic'
 import { cookies } from 'next/headers'
 import { generateState } from 'oslo/oauth2'
-import { arctigGoogle } from '../../../../adapters/arctic'
 
 export async function GET() {
 	const state = generateState()
@@ -21,6 +21,6 @@ export async function GET() {
 		httpOnly: true,
 		maxAge: 10 * 60,
 	})
-	// console.log('url?', url)
+
 	return Response.redirect(url)
 }

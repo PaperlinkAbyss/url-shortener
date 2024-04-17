@@ -9,6 +9,7 @@ import { useFormState } from 'react-dom'
 const inputStyles = 'pl-2 border border-gray-600/20 rounded-lg py-1'
 const labelStyles = 'font-semibold pb-1 text-md pt-2 mt-2'
 const baseButton = 'px-1 py-2 rounded-md my-2 border border-gray-600/20  transition-colors ease-in '
+
 export default function Page() {
 	const [isLoaded, action] = useFormState(login, { error: false, isLoaded: false, success: false })
 	const router = useRouter()
@@ -59,12 +60,12 @@ export default function Page() {
 					{isLoaded && isLoaded.success ? 'Propely logged, thank you!' : isLoaded.reason}
 				</form>
 				<div className='border-t-2 border-gray-600/20 grid p-4 '>
-					<Link href='/api/github' className={clsx(baseButton, 'bg-white hover:bg-gray-400/10')}>
-						Log in with [oauth to be determined]
+					<Link href='/api/github' className={clsx(baseButton, 'bg-white text-center hover:bg-gray-400/10')}>
+						Log in with GitHub
 					</Link>
-					<button className={clsx(baseButton, 'bg-white hover:bg-gray-400/10')}>
-						Log in with [oauth to be determined]
-					</button>
+					<Link href='/api/google' className={clsx(baseButton, 'bg-white text-center hover:bg-gray-400/10')}>
+						Log in with Google
+					</Link>
 				</div>
 			</div>
 		</div>

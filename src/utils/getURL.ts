@@ -1,5 +1,5 @@
-import { SITE_URL } from '../../adapters/arctic'
+import { SITE_URL } from '@/lib/auth'
 
 export default function getURL(path: string = '') {
-	return `${SITE_URL}/${path}`
+	return new URL(path, SITE_URL)
 }

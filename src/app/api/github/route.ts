@@ -1,8 +1,7 @@
-'use server'
+import { arcticGithub } from '@/lib/auth'
 import { generateState } from 'arctic'
 import { cookies } from 'next/headers'
 import 'server-only'
-import { arcticGithub } from '../../../../adapters/arctic'
 export async function GET(request: Request) {
 	const state = generateState()
 	const url = await arcticGithub.createAuthorizationURL(state)
@@ -14,6 +13,5 @@ export async function GET(request: Request) {
 		maxAge: 60 * 10,
 		sameSite: 'lax',
 	})
-	console.log('What is user doing?', { state, url })
 	return Response.redirect(url)
 }

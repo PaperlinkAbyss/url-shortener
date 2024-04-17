@@ -13,7 +13,6 @@ export default function Linker() {
 	}
 	const [state, formAction] = useFormState(sendURL, { shortURL: '', hasError: false, isSent: false, reason: '' })
 
-	function openNonLoggedModal() {}
 	return (
 		<form className='grid place-content-center justify-center h-screen' action={formAction}>
 			<h2 className='text-8xl font-bold mb-10'>
@@ -23,7 +22,12 @@ export default function Linker() {
 					<span className='italic'>shorter</span>
 				</span>
 			</h2>
-			{state?.isSent && state.hasError && <div className='text-center'>putito ha fallao:{state?.reason}</div>}
+			{state?.isSent && state.hasError && (
+				<div className='text-center'>
+					Something went wrong:<br></br>
+					{state?.reason}
+				</div>
+			)}
 			<div className='grid grid-cols-1 gap-1 '>
 				<label htmlFor='short-url-input' className='text-center mb-1'>
 					Insert URL
@@ -76,10 +80,7 @@ export default function Linker() {
 					)}
 				/>
 			</div>
-			<button
-				type='submit'
-				onClick={openNonLoggedModal}
-				className='bg-black text-white font-medium mt-1 p-1 rounded-lg '>
+			<button type='submit' className='bg-black text-white font-medium mt-1 p-1 rounded-lg '>
 				Shorten URL
 			</button>
 			<input

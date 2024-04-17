@@ -1,10 +1,8 @@
-import { db } from '@/db/db'
-import { users } from '@/db/schema'
+import { isUserOnDB } from '@/db/queries'
+import { arctigGoogle, oauthErrorCookie, userIdCookie, userInfoCookie } from '@/lib/auth'
 import getURL from '@/utils/getURL'
-import { eq } from 'drizzle-orm'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
-import { arctigGoogle } from '../../../../../adapters/arctic'
 const GoogleUserValidator = z.object({
 	name: z.string().optional(),
 	given_name: z.string().optional(),
@@ -21,7 +19,8 @@ export async function GET(request: Request) {
 	const storedCodeVerifier = cookies().get('code_verifier')?.value
 
 	if (!code || !storedState || !storedCodeVerifier || state !== storedState) {
-		// 400
+		userInfoCookie.delete()
+		userIdCookie.delete()
 		return new Response(null, { status: 401 })
 	}
 
@@ -34,15 +33,22 @@ export async function GET(request: Request) {
 		})
 		const user = await response.json()
 		const validData = GoogleUserValidator.safeParse(user)
-		if (!validData.success) return Response.redirect('/', 401)
-		const isUserOnDb = await db.query.users.findFirst({ where: eq(users.email, validData.data.email) })
-		if (!isUserOnDb) {
-			// cookies().set('userInfo', JSON.stringify({userName: }), { maxAge: 60 * 5 })
-			return Response.redirect(getURL('register/caca'))
+
+		if (!validData.success) {
+			oauthErrorCookie.set('Error on google login.', { expires: 60, maxAge: 60 })
+			return Response.redirect('/', 401)
 		}
+		const isUserOnDb = await isUserOnDB(validData.data.email)
+		if (!isUserOnDb) {
+			userInfoCookie.set({ isOauth: true, email: validData.data.email, username: validData.data.name || '' })
+			return Response.redirect(getURL('register/set-username'))
+		}
+		userIdCookie.set(isUserOnDb.id)
 		return Response.redirect(getURL())
 	} catch (e) {
-		cookies().set('oauthError', 'Error on google login.', { expires: 60, maxAge: 60 })
+		oauthErrorCookie.set('Error on google login.', { expires: 60, maxAge: 60 })
+		userInfoCookie.delete()
+		userIdCookie.delete()
 		console.log('Error', { e, storedCodeVerifier, storedState, code, state })
 		return Response.redirect(getURL())
 	}
